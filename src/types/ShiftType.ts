@@ -1,11 +1,8 @@
-import { Coordinates } from "./Coordinates";
 import { WorkType } from "./WorkType";
-
 
 export interface ShiftType {
   id: string;
   logo: string;
-  coordinates: Coordinates;
   address: string;
   companyName: string;
   dateStartByCity: string;
@@ -15,8 +12,6 @@ export interface ShiftType {
   planWorkers: number;
   workTypes: WorkType[];
   priceWorker: number;
-  bonusPriceWorker: number;
   customerFeedbacksCount: string;
   customerRating: number;
-  isPromotionEnabled: boolean;
 }

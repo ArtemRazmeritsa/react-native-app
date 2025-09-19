@@ -3,8 +3,7 @@ import { ShiftType } from '../types/ShiftType';
 export const fetchShifts = async (
   lat: number,
   lon: number,
-  setData: (shifts: ShiftType[]) => void,
-) => {
+): Promise<ShiftType[]> => {
   try {
     const response = await fetch(
       `https://mobile.handswork.pro/api/shifts/map-list-unauthorized?latitude=${lat}&longitude=${lon}`,
@@ -12,11 +11,13 @@ export const fetchShifts = async (
 
     if (!response.ok) {
       console.error('Server error:', response.status);
-      return;
+      return [];
     }
+
     const shifts: { data: ShiftType[] } = await response.json();
-    setData(shifts.data);
+    return shifts.data ?? [];
   } catch (error) {
     console.error('Fetch error:', error);
+    return [];
   }
 };

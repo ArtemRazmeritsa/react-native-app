@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,17 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import Geolocation, { GeoCoordinates } from 'react-native-geolocation-service';
-import { ShiftType } from '../types/ShiftType';
-import { fetchShifts } from '../api/fetchShifts';
+import Geolocation from 'react-native-geolocation-service';
+
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/Navigation';
+import { shiftStore } from '../stores/ShiftStore';
+import { observer } from 'mobx-react-lite';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Shifts'>;
 
-export function ShiftListScreen() {
-  const [location, setLocation] = useState<GeoCoordinates | null>(null);
-  const [shifts, setShifts] = useState<ShiftType[]>([]);
+export const ShiftListScreen = observer(() => {
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
@@ -35,7 +34,9 @@ export function ShiftListScreen() {
         }
       }
       Geolocation.getCurrentPosition(
-        pos => setLocation(pos.coords),
+        pos => {
+          shiftStore.setLocation(pos.coords);
+        },
         error => console.log('Geolocation error:', error),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
       );
@@ -45,12 +46,15 @@ export function ShiftListScreen() {
   }, []);
 
   useEffect(() => {
-    if (location) {
-      fetchShifts(location.latitude, location.longitude, setShifts);
+    if (shiftStore.location) {
+      shiftStore.loadShifts(
+        shiftStore.location.latitude,
+        shiftStore.location.longitude,
+      );
     }
-  }, [location]);
+  }, []);
 
-  if (!location) {
+  if (!shiftStore.location) {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={styles.text}>Определяем местоположение...</Text>
@@ -58,7 +62,7 @@ export function ShiftListScreen() {
     );
   }
 
-  if (!shifts.length) {
+  if (shiftStore.loading) {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={styles.text}>Загружаем смены...</Text>
@@ -68,36 +72,83 @@ export function ShiftListScreen() {
 
   return (
     <FlatList
-      data={shifts}
+      contentContainerStyle={styles.container}
+      data={shiftStore.shifts}
       keyExtractor={item => item.id}
       renderItem={({ item }) => (
         <TouchableOpacity
-          style={styles.shiftItem}
-          onPress={() => navigation.navigate('ShiftDetails', { shift: item })}
+          style={styles.card}
+          onPress={() => {
+            shiftStore.setSelectedShift(item);
+            navigation.navigate('ShiftDetails', { shift: item });
+          }}
         >
-          <Image source={{ uri: item.logo }} style={styles.shiftLogo} />
-          <View style={styles.shiftInfo}>
-            <Text style={styles.shiftCompany}>{item.companyName}</Text>
-            <Text style={styles.shiftAddress}>{item.address}</Text>
+          <View style={styles.cardHeader}>
+            <Image source={{ uri: item.logo }} style={styles.logo} />
+            <View style={styles.cardHeaderTextContainer}>
+              <Text style={styles.company}>{item.companyName}</Text>
+              <Text style={styles.address}>{item.address}</Text>
+            </View>
+          </View>
+
+          <View style={styles.cardBody}>
+            <View style={styles.row}>
+              <Text style={styles.label}>Дата:</Text>
+              <Text style={styles.value}>{item.dateStartByCity}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Время:</Text>
+              <Text style={styles.value}>
+                {item.timeStartByCity} - {item.timeEndByCity}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Набрано/План:</Text>
+              <Text style={styles.value}>
+                {item.currentWorkers}/{item.planWorkers}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Оплата:</Text>
+              <Text style={styles.value}>{item.priceWorker} ₽</Text>
+            </View>
           </View>
         </TouchableOpacity>
       )}
     />
   );
-}
+});
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#f5f5f5', padding: 12 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 18, color: '#000' },
-  shiftItem: {
-    flexDirection: 'row',
+  text: { fontSize: 18, color: '#333' },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 12,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  shiftLogo: { width: 50, height: 50, marginRight: 12 },
-  shiftInfo: { flex: 1, justifyContent: 'center' },
-  shiftCompany: { fontSize: 16, fontWeight: 'bold' },
-  shiftAddress: { fontSize: 14, color: '#000000ff' },
+  cardHeader: { flexDirection: 'row', marginBottom: 12 },
+  cardHeaderTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  logo: { width: 60, height: 60, borderRadius: 8, marginRight: 12 },
+  company: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
+  address: { fontSize: 14, color: '#666' },
+
+  cardBody: {},
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  label: { fontWeight: '600', color: '#555' },
+  value: { color: '#333' },
 });

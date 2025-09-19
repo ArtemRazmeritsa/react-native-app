@@ -1,6 +1,6 @@
-import { ShiftType } from "./ShiftType";
+import { ShiftType } from './ShiftType';
 
 export type RootStackParamList = {
-  Shifts: ShiftType;
-  ShiftDetails: { shift: ShiftType }; 
+  Shifts: undefined;
+  ShiftDetails: { shift: ShiftType };
 };

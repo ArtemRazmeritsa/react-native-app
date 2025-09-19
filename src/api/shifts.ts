@@ -7,15 +7,15 @@ export const fetchShifts = async (
 ) => {
   try {
     const response = await fetch(
-      `https://mobile.handswork.pro/api/shift?lat=${lat}&lon=${lon}`,
+      `https://mobile.handswork.pro/api/shifts/map-list-unauthorized?latitude=${lat}&longitude=${lon}`,
     );
 
     if (!response.ok) {
       console.error('Ошибка сервера:', response.status);
       return;
     }
-    const data: { shifts: ShiftType[] } = await response.json();
-    setData(data.shifts);
+    const shifts: { data: ShiftType[] } = await response.json();
+    setData(shifts.data);
   } catch (error) {
     console.error('Ошибка fetch:', error);
   }

@@ -11,12 +11,12 @@ export const fetchShifts = async (
     );
 
     if (!response.ok) {
-      console.error('Ошибка сервера:', response.status);
+      console.error('Server error:', response.status);
       return;
     }
     const shifts: { data: ShiftType[] } = await response.json();
     setData(shifts.data);
   } catch (error) {
-    console.error('Ошибка fetch:', error);
+    console.error('Fetch error:', error);
   }
 };
